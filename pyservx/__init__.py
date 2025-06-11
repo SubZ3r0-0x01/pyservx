@@ -1,0 +1,1 @@
+__version__ = "1.0.1"  # Changed from 1.0.0

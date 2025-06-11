@@ -1,0 +1,18 @@
+[project]
+name = "pyservx"
+version = "1.0.1"  # Changed from 1.0.0
+description = "A simple HTTP server for file sharing with folder zipping and file upload capabilities"
+readme = "README.md"
+authors = [
+    { name = "SubZ3r0x01", email = "your.email@example.com" }
+]
+license = { file = "LICENSE" }
+requires-python = ">=3.6"
+dependencies = []
+
+[project.scripts]
+pyservx = "pyservx.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
