@@ -214,7 +214,7 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
         }}
 
         .glitch {{
-            position: relative;
+            position: relative.
             animation: glitch 2s infinite;
         }}
 
@@ -567,29 +567,28 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
         return
 
 def get_ip_addresses():
-    """Retrieve all non-loopback IPv4 addresses of the system."""
-    ip_addresses = []
+    """Retrieve all non-loopback and loopback IPv4 addresses of the system."""
+    ip_addresses = ["127.0.0.1"]  # Explicitly include localhost
     try:
         # Get all network interfaces, filter for IPv4 (AF_INET)
         for interface in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
             ip = interface[4][0]
-            # Filter out loopback (127.x.x.x) and link-local (169.254.x.x)
-            if not ip.startswith("127.") and not ip.startswith("169.254."):
+            # Filter out link-local (169.254.x.x) but keep 127.x.x.x
+            if not ip.startswith("169.254.") and ip not in ip_addresses:
                 ip_addresses.append(ip)
-        return ip_addresses if ip_addresses else ["No IPv4 addresses found"]
+        return ip_addresses if ip_addresses else ["127.0.0.1", "No other IPv4 addresses found"]
     except socket.gaierror:
-        return ["Unable to resolve hostname"]
+        return ["127.0.0.1", "Unable to resolve hostname"]
 
 def run(base_dir):
     """Run the HTTP server with the specified base directory."""
-    # Set up the server with the base directory
     class Handler(FileRequestHandler):
         def __init__(self, *args, **kwargs):
             self.base_dir = base_dir
             super().__init__(*args, **kwargs)
 
     # Print IP addresses before starting the server
-    print("System IPv4 addresses:")
+    print("System IPv4 addresses (including localhost):")
     for ip in get_ip_addresses():
         print(f"  http://{ip}:{PORT}")
     
@@ -597,7 +596,7 @@ def run(base_dir):
     
     try:
         server = socketserver.ThreadingTCPServer(("0.0.0.0", PORT), Handler)
-        print(f"Serving at http://0.0.0.0:{PORT} (accessible from network)")
+        print(f"Serving at http://0.0.0.0:{PORT} (accessible from network and localhost)")
         
         def shutdown_handler(signum, frame):
             print("\nShutting down server...")
@@ -629,7 +628,7 @@ def run(base_dir):
 def main():
     """Main entry point for the command-line tool."""
     parser = argparse.ArgumentParser(description="PyServeX: A simple HTTP server for file sharing.")
-    parser.add_argument('--version', action='version', version='PyServeX 1.0.0')
+    parser.add_argument('--version', action='version', version='PyServeX 1.0.1')
     args = parser.parse_args()
 
     # Get the shared folder
