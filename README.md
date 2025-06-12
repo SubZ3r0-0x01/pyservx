@@ -1,4 +1,4 @@
-# PyServeX
+# pyservx – Secure Python HTTP File Server
 
 A simple HTTP server for file sharing with a retro-styled web interface.
 
