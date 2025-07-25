@@ -1,18 +1,29 @@
 [project]
 name = "pyservx"
-version = "1.0.1"  # Changed from 1.0.0
-description = "A simple HTTP server for file sharing with folder zipping and file upload capabilities"
+version = "1.1.0"
+description = "A simple Python server package for file sharing with a retro UI."
 readme = "README.md"
-authors = [
-    { name = "SubZ3r0x01", email = "your.email@example.com" }
-]
-license = { file = "LICENSE" }
 requires-python = ">=3.6"
-dependencies = []
+license = { file = "LICENSE" }
+authors = [
+    { name = "Subz3r0x01", email = "subz3r0x01@protonmail.com" }
+]
+dependencies = [
+    "qrcode"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/pyservx"
+Repository = "https://github.com/yourusername/pyservx"
 
 [project.scripts]
 pyservx = "pyservx.server:main"
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
