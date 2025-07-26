@@ -1,0 +1,36 @@
+
+--- Progress Log (as of 2025-07-25) ---
+
+**Key Features Implemented:**
+- QR code generation for server access.
+- Removal of file size restrictions for uploads.
+- Functionality for uploading multiple files.
+- Automatic generation of `robots.txt` for privacy.
+- Enhanced web interface with search and sorting capabilities, and a modern, responsive UI.
+- Real-time GUI progress bar for uploads and downloads (ETA, speed, size).
+- CLI progress summaries for file transfers.
+
+**Code Refactoring:**
+- `server.py` has been modularized into:
+    - `pyservx/request_handler.py` (HTTP request handling)
+    - `pyservx/html_generator.py` (HTML content generation)
+    - `pyservx/file_operations.py` (file-related operations)
+
+**Dependency Management:**
+- `qrcode` library added and integrated.
+- `build` and `twine` installed for package distribution.
+
+**Project Updates:**
+- `README.md` updated with all new features and usage instructions.
+- `pyproject.toml` updated for correct package building and dependency management.
+- `.gitignore` updated to include new files and directories.
+
+**Deployment Status:**
+- Local Git repository committed with all changes.
+- Distribution packages (`.whl` and `.tar.gz`) successfully built.
+- Packages (`pyservx` versions 1.0.4 and 1.1.0) successfully uploaded to PyPI.
+- Attempted to push to GitHub, but encountered a credential issue (Git could not read username). This needs to be resolved before pushing to the remote repository.
+
+**Next Steps (Tomorrow):**
+- Resolve GitHub push credential issue.
+- Create shell (`.sh`) and batch (`.bat`) scripts for automated GitHub push and PyPI release.

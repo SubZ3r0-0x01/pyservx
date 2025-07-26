@@ -14,3 +14,4 @@ __pycache__/
 
 # User-specific configurations
 .pyservx_config.json
+shared/

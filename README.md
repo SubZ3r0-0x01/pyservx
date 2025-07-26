@@ -23,7 +23,7 @@ Ensure you have Python 3.6 or higher installed.
 Run the server:
 
 ```bash
-pyservx
+python3 run.py
 ```
 
 - Follow the prompt to select a shared folder.
@@ -37,11 +37,21 @@ pyservx
 - Download entire folders as ZIP files.
 - Upload files via the web interface.
 - Accessible via localhost (`127.0.0.1`) and network IPs.
+- **QR Code for Easy Access:** Scan a QR code in the terminal to quickly access the server from your mobile device on the same network.
+- **Real-time Progress Bars:** Enjoy real-time progress updates for both uploads and downloads, including ETA, transfer speed, and file size.
+- **Multiple File Uploads:** Upload multiple files simultaneously through the web interface.
+- **No File Size Restriction:** Upload files of any size without limitations.
+- **Enhanced Web Interface:**
+    - **Search Functionality:** Quickly find files with the new search bar.
+    - **File Sorting:** Sort files by name, size, or date for better organization.
+    - **Modern & Responsive UI:** A refreshed, responsive design for seamless use across all devices.
+- **Automated `robots.txt`:** A `robots.txt` file is automatically generated to prevent search engines from indexing your file server, enhancing privacy.
+- **Modular Codebase:** The `server.py` file has been refactored into smaller, more maintainable modules (`request_handler.py`, `html_generator.py`, `file_operations.py`).
 
 ## Requirements
 
 - Python 3.6+
-- No external dependencies
+- `qrcode` library (automatically installed with pip)
 
 ## License
 
