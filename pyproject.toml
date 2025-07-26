@@ -4,7 +4,7 @@ version = "1.1.0"
 description = "A simple Python server package for file sharing with a retro UI."
 readme = "README.md"
 requires-python = ">=3.6"
-license = { file = "LICENSE" }
+license = "MIT"
 authors = [
     { name = "Subz3r0x01", email = "subz3r0x01@protonmail.com" }
 ]
@@ -13,13 +13,16 @@ dependencies = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    
     "Operating System :: OS Independent",
 ]
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages]
+find = { include = ["pyservx*"] }
 
 [project.urls]
 Homepage = "https://github.com/yourusername/pyservx"
