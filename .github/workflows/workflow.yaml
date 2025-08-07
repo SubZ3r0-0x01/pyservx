@@ -3,22 +3,24 @@ name: PyServeX CI/CD
 on:
   push:
     branches:
-      - master
+      - main         # Updated from master
     tags:
-      - 'v*'
+      - 'v*'         # For release tags like v1.0.0
   pull_request:
     branches:
-      - master
+      - main         # Updated from master
 
 jobs:
   test:
+    name: Test on Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -34,4 +36,4 @@ jobs:
       - name: Run tests
         run: |
           python -m pytest tests/ --verbose
-        continue-on-error: true  # Allow older Python versions to fail gracefully
+        continue-on-error: true  # Allow older versions to fail gracefully
