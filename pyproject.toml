@@ -5,6 +5,7 @@ description = "A simple Python server package for file sharing with a retro UI."
 readme = "README.md"
 requires-python = ">=3.6"
 license = "MIT"
+keywords = ["file server", "http server", "file sharing", "retro ui", "qrcode", "pyservx"]
 authors = [
     { name = "Subz3r0x01", email = "subz3r0x01@protonmail.com" }
 ]
@@ -25,8 +26,8 @@ build-backend = "setuptools.build_meta"
 find = { include = ["pyservx*"] }
 
 [project.urls]
-Homepage = "https://github.com/yourusername/pyservx"
-Repository = "https://github.com/yourusername/pyservx"
+Homepage = "https://github.com/SubZ3r0-0x01/pyservx"
+Repository = "https://github.com/SubZ3r0-0x01/pyservx"
 
 [project.scripts]
 pyservx = "pyservx.server:main"
