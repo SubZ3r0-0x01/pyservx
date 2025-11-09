@@ -1,6 +1,8 @@
-# pyservx – Secure Python HTTP File Server
+# PyServeX – Advanced Python HTTP File Server
 
-A simple HTTP server for file sharing with a retro-styled web interface.
+A feature-rich HTTP server for file sharing with a retro-styled web interface, dark/light themes, built-in notepad, analytics, and advanced file operations.
+
+**by Parth Padhiyar (SubZ3r0-0x01)**
 
 ## Installation
 
@@ -10,43 +12,97 @@ Install using pip:
 pip install pyservx
 ```
 
-Or use pipx for an isolated environment (recommended for Linux):
+Or use pipx for an isolated environment (recommended):
 
 ```bash
 pipx install pyservx
 ```
 
-Ensure you have Python 3.6 or higher installed.
+Requires Python 3.6 or higher.
 
 ## Usage
 
 Run the server:
 
 ```bash
-python3 run.py
+pyservx
 ```
 
-- Follow the prompt to select a shared folder.
-- The server will start at `http://localhost:8088` and other network IPs.
-- Access the web interface to browse, download, or upload files.
-- Use `Ctrl+C` to stop the server.
+Or with custom options:
+
+```bash
+pyservx --port 8080 --no-qr
+```
+
+- The server automatically creates a shared folder in your Downloads directory (`PyServeX-Shared`)
+- Access the web interface at `http://localhost:8088` (or your custom port)
+- Scan the QR code in the terminal to access from mobile devices
+- Use `Ctrl+C` to stop the server
 
 ## Features
 
-- File and folder browsing with a retro "hacker" UI.
-- Download entire folders as ZIP files.
-- Upload files via the web interface.
-- Accessible via localhost (`127.0.0.1`) and network IPs.
-- **QR Code for Easy Access:** Scan a QR code in the terminal to quickly access the server from your mobile device on the same network.
-- **Real-time Progress Bars:** Enjoy real-time progress updates for both uploads and downloads, including ETA, transfer speed, and file size.
-- **Multiple File Uploads:** Upload multiple files simultaneously through the web interface.
-- **No File Size Restriction:** Upload files of any size without limitations.
-- **Enhanced Web Interface:**
-    - **Search Functionality:** Quickly find files with the new search bar.
-    - **File Sorting:** Sort files by name, size, or date for better organization.
-    - **Modern & Responsive UI:** A refreshed, responsive design for seamless use across all devices.
-- **Automated `robots.txt`:** A `robots.txt` file is automatically generated to prevent search engines from indexing your file server, enhancing privacy.
-- **Modular Codebase:** The `server.py` file has been refactored into smaller, more maintainable modules (`request_handler.py`, `html_generator.py`, `file_operations.py`).
+### Core Features
+- **Retro "Hacker" UI** with dark/light theme toggle
+- **File and folder browsing** with modern, responsive interface
+- **Download entire folders** as ZIP files
+- **Upload multiple files** simultaneously via drag-and-drop
+- **QR Code Access** for easy mobile device connection
+- **Real-time Progress Tracking** for uploads and downloads with ETA and speed
+- **No File Size Restrictions** - upload files of any size
+
+### Advanced Features
+- **Built-in Notepad/Text Editor**
+  - Create and edit text files directly in the browser
+  - Syntax highlighting support
+  - Keyboard shortcuts (Ctrl+S to save)
+  - Theme-aware editor
+
+- **File Preview System**
+  - Images (JPG, PNG, GIF, etc.)
+  - PDFs (embedded viewer)
+  - Videos (MP4, WebM, OGG)
+  - Audio files (MP3, WAV, OGG)
+  - Text files with syntax highlighting
+
+- **Analytics & Usage Tracking**
+  - SQLite-based analytics database
+  - Track file access, downloads, and uploads
+  - Monitor popular files and usage patterns
+  - Client IP and user agent logging
+
+- **Enhanced File Operations**
+  - Duplicate file detection
+  - File hash generation (MD5)
+  - Advanced file search with filters
+  - Thumbnail generation for images
+  - File copy and move operations
+  - Archive extraction support
+
+- **Smart Configuration**
+  - Persistent settings stored in user home directory
+  - Automatic shared folder creation in Downloads
+  - Configurable analytics and thumbnail generation
+  - Custom port support
+
+### User Interface
+- **Dark/Light Theme Toggle** with persistent settings
+- **Search Functionality** to quickly find files
+- **File Sorting** by name, size, or date
+- **Responsive Design** for desktop and mobile
+- **Breadcrumb Navigation** for easy folder traversal
+- **File Type Icons** for better visual organization
+
+### Security & Privacy
+- **Path Traversal Protection** prevents unauthorized access
+- **Automated `robots.txt`** to prevent search engine indexing
+- **Secure File Operations** with proper validation
+
+### Technical Features
+- **Modular Codebase** for easy maintenance and extension
+- **Chunked File Transfer** for efficient large file handling
+- **Progress Callbacks** for real-time feedback
+- **Threaded Server** for concurrent connections
+- **Graceful Shutdown** handling
 
 ## Requirements
 

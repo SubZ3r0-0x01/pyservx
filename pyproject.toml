@@ -1,21 +1,33 @@
 [project]
 name = "pyservx"
-version = "1.1.0"
-description = "A simple Python server package for file sharing with a retro UI."
+version = "2.0.0"
+description = "A feature-rich Python HTTP server for file sharing with retro UI, dark/light themes, notepad, analytics, thumbnails, and QR code access."
 readme = "README.md"
 requires-python = ">=3.6"
-license = "MIT"
-keywords = ["file server", "http server", "file sharing", "retro ui", "qrcode", "pyservx"]
+license = {text = "MIT"}
+keywords = ["file server", "http server", "file sharing", "retro ui", "qrcode", "pyservx", "dark mode", "light mode", "notepad", "text editor", "file preview", "analytics", "thumbnails"]
 authors = [
     { name = "Subz3r0x01", email = "subz3r0x01@protonmail.com" }
 ]
 dependencies = [
-    "qrcode"
+    "qrcode",
+    "Pillow"
 ]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
     "Programming Language :: Python :: 3",
-    
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: System :: Filesystems",
 ]
 
 [build-system]

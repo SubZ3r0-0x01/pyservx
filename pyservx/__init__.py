@@ -1,1 +1,1 @@
-__version__ = "1.0.1"  # Changed from 1.0.0
+__version__ = "2.0.0"  # Unified version with all features: dark/light mode, notepad, analytics, thumbnails, and file operations

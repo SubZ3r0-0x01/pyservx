@@ -24,6 +24,20 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             return self.base_dir  # Prevent access outside the base directory
         return abs_path
 
+    def log_access(self, action, file_path=None, file_size=None, duration=None):
+        """Log file access for analytics"""
+        if hasattr(self, 'analytics') and self.config.get('analytics_enabled', True):
+            client_ip = self.client_address[0]
+            user_agent = self.headers.get('User-Agent', '')
+            self.analytics.log_file_access(
+                file_path or self.path,
+                action,
+                client_ip,
+                user_agent,
+                file_size,
+                duration
+            )
+
     def serve_preview_page(self, file_path):
         """Serve a preview page for different file types"""
         import mimetypes
@@ -636,16 +650,19 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header("Content-Disposition", f"attachment; filename={os.path.basename(folder_path)}.zip")
                 self.end_headers()
                 shutil.copyfileobj(zip_file, self.wfile)
+                self.log_access('download_folder', folder_path)
             else:
                 self.send_error(404, "Folder not found")
             return
 
         if os.path.isdir(self.translate_path(self.path)):
             self.list_directory(self.translate_path(self.path))
+            self.log_access('browse')
         elif self.path.endswith('/preview'):
             file_path = self.translate_path(self.path.replace('/preview', ''))
             if os.path.isfile(file_path):
                 self.serve_preview_page(file_path)
+                self.log_access('preview', file_path, os.path.getsize(file_path))
             else:
                 self.send_error(404, "File not found for preview")
             return
@@ -653,6 +670,7 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             file_path = self.translate_path(self.path.replace('/edit', ''))
             if os.path.isfile(file_path):
                 self.serve_editor_page(file_path)
+                self.log_access('edit', file_path)
             else:
                 self.send_error(404, "File not found for editing")
             return
@@ -661,6 +679,7 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             dir_path = self.translate_path(self.path.replace('/notepad', ''))
             if os.path.isdir(dir_path):
                 self.serve_notepad_page(dir_path)
+                self.log_access('create_file')
             else:
                 self.send_error(404, "Directory not found")
             return
@@ -682,6 +701,8 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                     duration = end_time - start_time
                     speed_bps = file_size / duration if duration > 0 else 0
                     logging.info(f"Downloaded {os.path.basename(path)} ({file_operations.format_size(file_size)}) in {duration:.2f}s at {file_operations.format_size(speed_bps)}/s")
+                    
+                    self.log_access('download', path, file_size, duration)
 
                 except OSError:
                     self.send_error(404, "File not found")
@@ -757,6 +778,12 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             redirect_url = self.path.replace('/upload', '') or '/'
             logging.info(f"Files uploaded: {', '.join(uploaded_files)} to {target_dir}")
             logging.info(f"Redirecting to: {redirect_url}")
+            
+            # Log analytics for each uploaded file
+            for filename in uploaded_files:
+                file_path = os.path.join(target_dir, filename)
+                if os.path.exists(file_path):
+                    self.log_access('upload', file_path, os.path.getsize(file_path))
 
             self.send_response(200)
             self.send_header("Content-type", "application/json")
@@ -786,6 +813,8 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             os.makedirs(folder_path)
             folder_name = os.path.basename(folder_path)
             logging.info(f"Created folder: {folder_path}")
+            
+            self.log_access('create_folder', folder_path)
             
             self.send_response(201)  # Created
             self.send_header("Content-type", "application/json")
