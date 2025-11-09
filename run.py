@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 
-import os
 from pyservx import server
 
 if __name__ == "__main__":
-    # Create a 'shared' directory if it doesn't exist
-    if not os.path.exists("shared"):
-        os.makedirs("shared")
+    # Get the shared folder (automatically creates in Downloads/PyServeX-Shared)
+    base_dir = server.get_shared_folder()
     
-    # Set the base directory for the server
-    server.base_dir = os.path.abspath("shared")
-    
-    # Run the server
-    server.run(server.base_dir)
+    # Run the server with QR codes enabled
+    server.run(base_dir, no_qr=False)

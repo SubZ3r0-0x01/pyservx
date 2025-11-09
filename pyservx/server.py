@@ -20,6 +20,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 PORT = 8088
 CONFIG_FILE = os.path.expanduser("~/.pyservx_config.json")  # Store config in user's home directory
 
+
+
 def load_config():
     """Load shared folder path from config file if it exists."""
     if os.path.exists(CONFIG_FILE):
@@ -41,32 +43,53 @@ def save_config(folder_path):
         logging.error(f"Failed to save config: {e}")
 
 def get_shared_folder():
-    """Prompt user for shared folder path or load from config."""
+    """Get or create shared folder in user's Downloads directory."""
+    # Check if there's a saved custom folder first
     saved_folder = load_config()
     if saved_folder and os.path.isdir(saved_folder):
         print(f"Using saved shared folder: {saved_folder}")
         return os.path.abspath(saved_folder)
 
-    while True:
-        folder_path = input("Enter the path to the shared folder: ").strip()
-        if os.path.isdir(folder_path):
-            break
-        print("Invalid folder path. Please enter a valid directory.")
-
-    while True:
-        persist = input("Do you want this choice to be persistent? (y/n): ").strip().lower()
-        if persist in ('y', 'n'):
-            break
-        print("Please enter 'y' or 'n'.")
-
-    folder_path = os.path.abspath(folder_path)
-    if persist == 'y':
-        save_config(folder_path)
-        print(f"Shared folder saved for future use: {folder_path}")
-    else:
-        print("Shared folder will be prompted again next time.")
-
-    return folder_path
+    # Get user's Downloads directory
+    import platform
+    system = platform.system()
+    
+    if system == "Windows":
+        # Windows Downloads folder
+        downloads_dir = os.path.join(os.path.expanduser("~"), "Downloads")
+    elif system == "Darwin":  # macOS
+        downloads_dir = os.path.join(os.path.expanduser("~"), "Downloads")
+    else:  # Linux and other Unix-like systems
+        downloads_dir = os.path.join(os.path.expanduser("~"), "Downloads")
+    
+    # Create PyServeX shared folder in Downloads
+    shared_folder = os.path.join(downloads_dir, "PyServeX-Shared")
+    
+    try:
+        if not os.path.exists(shared_folder):
+            os.makedirs(shared_folder)
+            print(f"Created shared folder: {shared_folder}")
+        else:
+            print(f"Using existing shared folder: {shared_folder}")
+        
+        # Save this as the default for future use
+        save_config(shared_folder)
+        
+        return os.path.abspath(shared_folder)
+        
+    except OSError as e:
+        logging.error(f"Failed to create shared folder: {e}")
+        print(f"Error creating shared folder in Downloads. Using current directory instead.")
+        
+        # Fallback to current directory
+        fallback_folder = os.path.join(os.getcwd(), "shared")
+        try:
+            if not os.path.exists(fallback_folder):
+                os.makedirs(fallback_folder)
+            return os.path.abspath(fallback_folder)
+        except OSError:
+            # Last resort - use current directory
+            return os.getcwd()
 
 def get_ip_addresses():
     """Retrieve all non-loopback and loopback IPv4 addresses of the system."""
@@ -103,7 +126,7 @@ def run(base_dir, no_qr=False):
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
+                box_size=3,
                 border=4,
             )
             qr.add_data(f"http://{ip}:{PORT}")

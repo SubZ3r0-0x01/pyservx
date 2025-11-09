@@ -1,0 +1,3 @@
+# PyServeX Enhanced Requirements
+qrcode>=7.0
+Pillow>=8.0.0  # For thumbnail generation
