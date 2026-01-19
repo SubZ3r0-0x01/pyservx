@@ -1,1 +1,0 @@
-__version__ = "2.0.0"  # Enhanced version with advanced features

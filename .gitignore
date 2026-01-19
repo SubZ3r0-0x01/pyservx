@@ -16,4 +16,19 @@ __pycache__/
 
 # User-specific configurations
 .pyservx_config.json
+
+# Test/temporary directories
 shared/
+temp/
+
+# Log files
+*.log
+server_output.log
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
