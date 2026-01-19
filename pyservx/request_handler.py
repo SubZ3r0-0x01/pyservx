@@ -640,8 +640,104 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             response_data = {"status": "error", "message": f"Error saving file: {e}"}
             self.wfile.write(json.dumps(response_data).encode('utf-8'))
 
+    def handle_save_clipboard(self):
+        """Handle saving clipboard content to server-side storage"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            request_body = self.rfile.read(content_length)
+            
+            data = json.loads(request_body)
+            content = data.get('content', '')
+            path_key = data.get('path', '/')
+            
+            logging.info(f"Saving clipboard for path: {path_key}, content length: {len(content)}")
+            
+            # Create clipboard storage directory
+            clipboard_dir = os.path.join(self.base_dir, '.pyservx_clipboard')
+            os.makedirs(clipboard_dir, exist_ok=True)
+            
+            # Use path as filename (sanitized)
+            safe_filename = path_key.replace('/', '_').replace('\\', '_').strip('_') or 'root'
+            clipboard_file = os.path.join(clipboard_dir, f"{safe_filename}.txt")
+            
+            logging.info(f"Saving to clipboard file: {clipboard_file}")
+            
+            with open(clipboard_file, 'w', encoding='utf-8') as f:
+                f.write(content)
+            
+            logging.info(f"Successfully saved clipboard for path: {path_key}")
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            response_data = {"status": "success", "message": "Clipboard saved successfully!"}
+            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            
+        except json.JSONDecodeError as e:
+            logging.error(f"JSON decode error in save_clipboard: {e}")
+            self.send_response(400)
+            self.send_header("Content-type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            response_data = {"status": "error", "message": "Invalid JSON payload"}
+            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+        except Exception as e:
+            logging.error(f"Error saving clipboard: {e}")
+            self.send_response(500)
+            self.send_header("Content-type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            response_data = {"status": "error", "message": f"Error saving clipboard: {e}"}
+            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+
+    def handle_load_clipboard(self):
+        """Handle loading clipboard content from server-side storage"""
+        try:
+            query_params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            path_key = query_params.get('path', ['/'])[0]
+            
+            logging.info(f"Loading clipboard for path: {path_key}")
+            
+            # Create clipboard storage directory
+            clipboard_dir = os.path.join(self.base_dir, '.pyservx_clipboard')
+            os.makedirs(clipboard_dir, exist_ok=True)
+            
+            # Use path as filename (sanitized)
+            safe_filename = path_key.replace('/', '_').replace('\\', '_').strip('_') or 'root'
+            clipboard_file = os.path.join(clipboard_dir, f"{safe_filename}.txt")
+            
+            logging.info(f"Looking for clipboard file: {clipboard_file}")
+            
+            if os.path.exists(clipboard_file):
+                with open(clipboard_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                logging.info(f"Loaded clipboard content: {len(content)} characters")
+            else:
+                content = ""
+                logging.info("No clipboard file found, returning empty content")
+            
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            response_data = {"status": "success", "content": content}
+            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            
+        except Exception as e:
+            logging.error(f"Error loading clipboard: {e}")
+            self.send_response(500)
+            self.send_header("Content-type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            response_data = {"status": "error", "message": f"Error loading clipboard: {e}"}
+            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+
     def do_GET(self):
-        if self.path.endswith('/download_folder'):
+        # Handle load_clipboard before other checks
+        if '/load_clipboard' in self.path:
+            self.handle_load_clipboard()
+            return
+        elif self.path.endswith('/download_folder'):
             folder_path = self.translate_path(self.path.replace('/download_folder', ''))
             if os.path.isdir(folder_path):
                 zip_file = file_operations.zip_folder(folder_path)
@@ -710,7 +806,11 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                 super().do_GET()
 
     def do_POST(self):
-        if self.path.endswith('/create_file'):
+        # Handle save_clipboard before other checks
+        if '/save_clipboard' in self.path:
+            self.handle_save_clipboard()
+            return
+        elif self.path.endswith('/create_file'):
             self.handle_create_file()
             return
         elif self.path.endswith('/save_file'):

@@ -267,8 +267,8 @@ def run(base_dir, no_qr=False, port=None):
     
     try:
         server = socketserver.ThreadingTCPServer(("0.0.0.0", PORT), Handler)
-        print(f"PyServeX v2.0.0 serving at http://0.0.0.0:{PORT}")
-        print("Features: Dark/Light Theme, Notepad, Analytics, Thumbnails, File Operations")
+        print(f"PyServeX v3.0.0 serving at http://0.0.0.0:{PORT}")
+        print("Features: Fixed Layout, Real-time Search, Direct Media Downloads, Text Clipboard, Dark/Light Theme")
         
         def shutdown_handler(signum, frame):
             print("\nShutting down PyServeX...")
@@ -300,7 +300,7 @@ def run(base_dir, no_qr=False, port=None):
 def main():
     """Main entry point for the command-line tool."""
     parser = argparse.ArgumentParser(description="PyServeX: Advanced HTTP server for file sharing with dark/light themes, notepad, analytics, and enhanced features.")
-    parser.add_argument('--version', action='version', version='PyServeX 2.0.0')
+    parser.add_argument('--version', action='version', version='PyServeX 3.0.0')
     parser.add_argument('--port', type=int, default=8088, help='Port to run the server on (default: 8088)')
     parser.add_argument('--no-qr', action='store_true', help='Disable QR code generation')
     args = parser.parse_args()
