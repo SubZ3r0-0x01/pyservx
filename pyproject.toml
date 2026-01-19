@@ -1,6 +1,6 @@
 [project]
 name = "pyservx"
-version = "3.0.0"
+version = "3.0.1"
 description = "A feature-rich Python HTTP server for file sharing with fixed layout UI, real-time search, direct media downloads, permanent text clipboard, dark/light themes, and QR code access."
 readme = "README.md"
 requires-python = ">=3.6"
