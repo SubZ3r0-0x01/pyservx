@@ -560,13 +560,13 @@ def list_directory_page(handler, path):
                         <thead>
                             <tr>
                                 <th onclick="sortFiles('name')" class="cursor-pointer">
-                                    📄 Name {{'↓' if sort_by == 'name' and sort_order == 'desc' else '↑' if sort_by == 'name' else ''}}
+                                    📄 Name {('↓' if sort_by == 'name' and sort_order == 'desc' else '↑' if sort_by == 'name' else '')}
                                 </th>
                                 <th onclick="sortFiles('size')" class="cursor-pointer text-right">
-                                    📏 Size {{'↓' if sort_by == 'size' and sort_order == 'desc' else '↑' if sort_by == 'size' else ''}}
+                                    📏 Size {('↓' if sort_by == 'size' and sort_order == 'desc' else '↑' if sort_by == 'size' else '')}
                                 </th>
                                 <th onclick="sortFiles('date')" class="cursor-pointer text-right">
-                                    📅 Modified {{'↓' if sort_by == 'date' and sort_order == 'desc' else '↑' if sort_by == 'date' else ''}}
+                                    📅 Modified {('↓' if sort_by == 'date' and sort_order == 'desc' else '↑' if sort_by == 'date' else '')}
                                 </th>
                                 <th class="text-right">⚡ Actions</th>
                             </tr>
