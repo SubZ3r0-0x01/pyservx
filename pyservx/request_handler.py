@@ -751,8 +751,11 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(404, "Folder not found")
             return
 
-        if os.path.isdir(self.translate_path(self.path)):
-            self.list_directory(self.translate_path(self.path))
+        # Parse the path without query parameters for directory/file checks
+        parsed_path = urllib.parse.urlparse(self.path).path
+        
+        if os.path.isdir(self.translate_path(parsed_path)):
+            self.list_directory(self.translate_path(parsed_path))
             self.log_access('browse')
         elif self.path.endswith('/preview'):
             file_path = self.translate_path(self.path.replace('/preview', ''))
@@ -781,7 +784,9 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
         else:
             # Handle file downloads with progress tracking
-            path = self.translate_path(self.path)
+            # Parse the path without query parameters
+            parsed_path = urllib.parse.urlparse(self.path).path
+            path = self.translate_path(parsed_path)
             if os.path.isfile(path):
                 try:
                     file_size = os.path.getsize(path)
