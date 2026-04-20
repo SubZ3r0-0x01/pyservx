@@ -38,6 +38,21 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                 duration
             )
 
+    def _safe_write_response(self, status_code, headers_dict, content):
+        """Safely write response with client disconnect handling"""
+        try:
+            self.send_response(status_code)
+            for header, value in headers_dict.items():
+                self.send_header(header, value)
+            self.end_headers()
+            if content:
+                self.wfile.write(content)
+        except (ConnectionResetError, BrokenPipeError):
+            # Client disconnected - this is normal, stop processing
+            logging.debug("Client disconnected during response")
+            return False
+        return True
+
     def serve_preview_page(self, file_path):
         """Serve a preview page for different file types"""
         import mimetypes
@@ -70,10 +85,7 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                 # Unsupported file type - offer download
                 preview_html = self.generate_download_preview(filename, file_url)
             
-            self.send_response(200)
-            self.send_header("Content-type", "text/html; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(preview_html.encode('utf-8'))
+            self._safe_write_response(200, {"Content-type": "text/html; charset=utf-8"}, preview_html.encode('utf-8'))
             
         except OSError:
             self.send_error(404, "File not found for preview")
@@ -85,76 +97,210 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>{title}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        /* Apple iOS Glass Theme Variables */
+        :root {{
+            --bg-primary: #000000;
+            --bg-secondary: #1c1c1e;
+            --bg-tertiary: #2c2c2e;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #007aff;
+            --accent-hover: #0051d5;
+            --glass-bg: rgba(28, 28, 30, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --blur-strong: 40px;
+            --blur-medium: 20px;
+            --radius-small: 10px;
+            --radius-medium: 16px;
+            --radius-large: 20px;
+            --spacing-sm: 12px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+        }}
+
+        body.light-theme {{
+            --bg-primary: #f2f2f7;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e5e5ea;
+            --text-primary: #000000;
+            --text-secondary: rgba(0, 0, 0, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }}
+
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+
         body {{ 
-            background: #000000; 
-            color: #00ff00;
-            font-family: 'Courier New', monospace; 
-            transition: background-color 0.3s ease, color 0.3s ease;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+            transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding: var(--spacing-md);
+            min-height: 100vh;
         }}
+
         .text-neon {{ 
-            color: #00ff00; 
-            transition: color 0.3s ease;
+            color: var(--text-primary);
         }}
-        body.light-theme {{ 
-            background: #ffffff; 
-            color: #000000; 
-        }}
-        body.light-theme .text-neon {{ 
-            color: #000000; 
-        }}
+
         .theme-toggle-btn {{
-            background: transparent;
-            border: 1px solid;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur-medium)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--blur-medium)) saturate(180%);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
             cursor: pointer;
             font-size: 1.2rem;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: fixed;
-            top: 1rem;
-            right: 1rem;
+            top: var(--spacing-md);
+            right: var(--spacing-md);
             z-index: 1000;
+            padding: var(--spacing-sm);
+            border-radius: var(--radius-medium);
+            box-shadow: 0 4px 16px var(--shadow-color), 0 0 0 1px var(--glass-border);
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }}
-        body:not(.light-theme) .theme-toggle-btn {{
-            border-color: #00ff00;
-            color: #00ff00;
+
+        .theme-toggle-btn:hover {{
+            transform: scale(1.05);
+            opacity: 0.85;
+            box-shadow: 0 8px 24px var(--shadow-color);
         }}
-        body.light-theme .theme-toggle-btn {{
-            border-color: #000000;
-            color: #000000;
+
+        .theme-toggle-btn:active {{
+            transform: scale(0.95);
         }}
-        body.light-theme .border-green-700 {{
-            border-color: #000000 !important;
+
+        .preview-container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur-strong)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--blur-strong)) saturate(180%);
+            border-radius: var(--radius-large);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px var(--shadow-color), 
+                        0 0 0 1px var(--glass-border),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            padding: var(--spacing-lg);
+            margin-top: 60px;
         }}
-        body.light-theme .bg-green-700 {{
-            background-color: #000000 !important;
+
+        .preview-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--glass-border);
         }}
-        body.light-theme .bg-blue-700 {{
-            background-color: #000000 !important;
+
+        .preview-header h1 {{
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
         }}
-        body.light-theme .bg-gray-700 {{
-            background-color: #6b7280 !important;
+
+        .preview-actions {{
+            display: flex;
+            gap: var(--spacing-sm);
+        }}
+
+        button {{
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-medium);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }}
+
+        button:hover {{
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }}
+
+        button:active {{
+            transform: translateY(0);
+        }}
+
+        .btn-secondary {{
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }}
+
+        .btn-secondary:hover {{
+            background: var(--bg-tertiary);
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }}
+
+        .preview-content {{
+            background: var(--bg-secondary);
+            border-radius: var(--radius-medium);
+            padding: var(--spacing-md);
+            border: 1px solid var(--glass-border);
+        }}
+
+        @media (max-width: 768px) {{
+            .preview-header {{
+                flex-direction: column;
+                gap: var(--spacing-md);
+                align-items: flex-start;
+            }}
+
+            .preview-actions {{
+                width: 100%;
+                flex-direction: column;
+            }}
+
+            button {{
+                width: 100%;
+            }}
         }}
     </style>
 </head>
-<body class="bg-black text-neon p-4">
+<body>
     <button id="themeToggle" class="theme-toggle-btn">
         <span id="themeIcon">🌙</span>
     </button>
-    {content}
+    
+    <div class="preview-container">
+        {content}
+    </div>
     
     <script>
-        // Theme Toggle Functionality
         function initTheme() {{
             const themeToggle = document.getElementById('themeToggle');
             const themeIcon = document.getElementById('themeIcon');
             const body = document.body;
             
-            // Load saved theme or default to dark
             const savedTheme = localStorage.getItem('pyservx-theme') || 'dark';
             
             if (savedTheme === 'light') {{
@@ -165,15 +311,12 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                 themeIcon.textContent = '🌙';
             }}
             
-            // Theme toggle event listener
             themeToggle.addEventListener('click', function() {{
                 if (body.classList.contains('light-theme')) {{
-                    // Switch to dark theme
                     body.classList.remove('light-theme');
                     themeIcon.textContent = '🌙';
                     localStorage.setItem('pyservx-theme', 'dark');
                 }} else {{
-                    // Switch to light theme
                     body.classList.add('light-theme');
                     themeIcon.textContent = '☀️';
                     localStorage.setItem('pyservx-theme', 'light');
@@ -189,71 +332,71 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def generate_image_preview(self, filename, file_url):
         content = f"""
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-2xl mb-4 text-center">Image Preview: {filename}</h1>
-        <div class="text-center mb-4">
-            <img src="{file_url}" alt="{filename}" class="max-w-full h-auto border border-green-700/50 rounded-lg mx-auto" style="max-height: 80vh;">
+        <div class="preview-header">
+            <h1>🖼️ {filename}</h1>
+            <div class="preview-actions">
+                <a href="{file_url}" download><button>Download</button></a>
+                <button onclick="window.close()" class="btn-secondary">Close</button>
+            </div>
         </div>
-        <div class="text-center">
-            <a href="{file_url}" download class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded mr-2">Download</a>
-            <button onclick="window.close()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded">Close</button>
+        <div class="preview-content" style="text-align: center;">
+            <img src="{file_url}" alt="{filename}" style="max-width: 100%; height: auto; max-height: 70vh; border-radius: var(--radius-medium);">
         </div>
-    </div>
 """
         return self.get_preview_page_template(f"Preview: {filename}", content, filename, file_url)
 
     def generate_pdf_preview(self, filename, file_url):
         content = f"""
-    <div class="max-w-6xl mx-auto">
-        <h1 class="text-2xl mb-4 text-center">PDF Preview: {filename}</h1>
-        <div class="mb-4">
-            <embed src="{file_url}" type="application/pdf" width="100%" height="600px" class="border border-green-700/50 rounded-lg">
+        <div class="preview-header">
+            <h1>📄 {filename}</h1>
+            <div class="preview-actions">
+                <a href="{file_url}" download><button>Download</button></a>
+                <button onclick="window.close()" class="btn-secondary">Close</button>
+            </div>
         </div>
-        <div class="text-center">
-            <a href="{file_url}" download class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded mr-2">Download</a>
-            <button onclick="window.close()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded">Close</button>
+        <div class="preview-content">
+            <embed src="{file_url}" type="application/pdf" width="100%" height="600px" style="border-radius: var(--radius-medium);">
         </div>
-    </div>
 """
         return self.get_preview_page_template(f"Preview: {filename}", content, filename, file_url)
 
     def generate_video_preview(self, filename, file_url):
         content = f"""
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-2xl mb-4 text-center">Video Preview: {filename}</h1>
-        <div class="text-center mb-4">
-            <video controls class="max-w-full h-auto border border-green-700/50 rounded-lg mx-auto" style="max-height: 70vh;">
+        <div class="preview-header">
+            <h1>🎬 {filename}</h1>
+            <div class="preview-actions">
+                <a href="{file_url}" download><button>Download</button></a>
+                <button onclick="window.close()" class="btn-secondary">Close</button>
+            </div>
+        </div>
+        <div class="preview-content" style="text-align: center;">
+            <video controls style="max-width: 100%; height: auto; max-height: 70vh; border-radius: var(--radius-medium);">
                 <source src="{file_url}" type="video/mp4">
                 <source src="{file_url}" type="video/webm">
                 <source src="{file_url}" type="video/ogg">
                 Your browser does not support the video tag.
             </video>
         </div>
-        <div class="text-center">
-            <a href="{file_url}" download class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded mr-2">Download</a>
-            <button onclick="window.close()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded">Close</button>
-        </div>
-    </div>
 """
         return self.get_preview_page_template(f"Preview: {filename}", content, filename, file_url)
 
     def generate_audio_preview(self, filename, file_url):
         content = f"""
-    <div class="max-w-2xl mx-auto">
-        <h1 class="text-2xl mb-4 text-center">Audio Preview: {filename}</h1>
-        <div class="text-center mb-4">
-            <audio controls class="w-full border border-green-700/50 rounded-lg p-2">
+        <div class="preview-header">
+            <h1>🎵 {filename}</h1>
+            <div class="preview-actions">
+                <a href="{file_url}" download><button>Download</button></a>
+                <button onclick="window.close()" class="btn-secondary">Close</button>
+            </div>
+        </div>
+        <div class="preview-content">
+            <audio controls style="width: 100%; border-radius: var(--radius-medium);">
                 <source src="{file_url}" type="audio/mpeg">
                 <source src="{file_url}" type="audio/ogg">
                 <source src="{file_url}" type="audio/wav">
                 Your browser does not support the audio element.
             </audio>
         </div>
-        <div class="text-center">
-            <a href="{file_url}" download class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded mr-2">Download</a>
-            <button onclick="window.close()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded">Close</button>
-        </div>
-    </div>
 """
         return self.get_preview_page_template(f"Preview: {filename}", content, filename, file_url)
 
@@ -271,16 +414,16 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             content = html.escape(content)
             
             page_content = f"""
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-2xl mb-4 text-center">Text Preview: {filename}</h1>
-        <div class="mb-4 p-4 border border-green-700/50 rounded-lg bg-gray-900 overflow-auto" style="max-height: 70vh;">
-            <pre class="text-sm whitespace-pre-wrap">{content}</pre>
+        <div class="preview-header">
+            <h1>📝 {filename}</h1>
+            <div class="preview-actions">
+                <button onclick="window.open('{file_url}edit', '_blank')">Edit</button>
+                <button onclick="window.close()" class="btn-secondary">Close</button>
+            </div>
         </div>
-        <div class="text-center">
-            <button onclick="window.open('{file_url}edit', '_blank')" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded mr-2">Edit</button>
-            <button onclick="window.close()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded">Close</button>
+        <div class="preview-content" style="max-height: 70vh; overflow-y: auto;">
+            <pre style="margin: 0; font-family: 'SF Mono', Monaco, Menlo, monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;">{content}</pre>
         </div>
-    </div>
 """
             return self.get_preview_page_template(f"Preview: {filename}", page_content, filename, f"/{os.path.relpath(file_path, self.base_dir).replace(chr(92), '/')}")
         except Exception:
@@ -288,14 +431,17 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def generate_download_preview(self, filename, file_url):
         content = f"""
-    <div class="max-w-2xl mx-auto text-center">
-        <h1 class="text-2xl mb-4">File: {filename}</h1>
-        <p class="mb-4">This file type cannot be previewed in the browser.</p>
-        <div>
-            <a href="{file_url}" download class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded mr-2">Download File</a>
-            <button onclick="window.close()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded">Close</button>
+        <div class="preview-header">
+            <h1>📦 {filename}</h1>
+            <div class="preview-actions">
+                <a href="{file_url}" download><button>Download</button></a>
+                <button onclick="window.close()" class="btn-secondary">Close</button>
+            </div>
         </div>
-    </div>
+        <div class="preview-content" style="text-align: center; padding: var(--spacing-xl);">
+            <p style="font-size: 3rem; margin-bottom: var(--spacing-md);">📄</p>
+            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">This file type cannot be previewed in the browser.</p>
+        </div>
 """
         return self.get_preview_page_template(f"Preview: {filename}", content, filename, file_url)
 
@@ -330,124 +476,211 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>{title}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {{
+            --bg-primary: #000000;
+            --bg-secondary: #1c1c1e;
+            --bg-tertiary: #2c2c2e;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #007aff;
+            --accent-hover: #0051d5;
+            --glass-bg: rgba(28, 28, 30, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --blur-strong: 40px;
+            --blur-medium: 20px;
+            --radius-small: 10px;
+            --radius-medium: 16px;
+            --radius-large: 20px;
+            --spacing-sm: 12px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+        }}
+
+        body.light-theme {{
+            --bg-primary: #f2f2f7;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e5e5ea;
+            --text-primary: #000000;
+            --text-secondary: rgba(0, 0, 0, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }}
+
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+
         body {{ 
-            background: #000000; 
-            color: #00ff00;
-            font-family: 'Courier New', monospace; 
-            transition: background-color 0.3s ease, color 0.3s ease;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-font-smoothing: antialiased;
+            padding: var(--spacing-md);
+            min-height: 100vh;
         }}
-        .text-neon {{ 
-            color: #00ff00; 
-            transition: color 0.3s ease;
-        }}
-        .editor-container {{ min-height: 70vh; }}
-        #editor {{ 
-            background: #111111; 
-            color: #00ff00; 
-            font-family: 'Courier New', monospace; 
-            font-size: 14px;
-            line-height: 1.5;
-            border: 1px solid #00ff00;
-            resize: none;
-            transition: all 0.3s ease;
-        }}
-        #editor:focus {{ outline: none; border-color: #00ff00; box-shadow: 0 0 5px rgba(0, 255, 0, 0.5); }}
-        .filename-input {{ 
-            background: #111111; 
-            color: #00ff00; 
-            border: 1px solid #00ff00;
-            font-family: 'Courier New', monospace;
-            transition: all 0.3s ease;
-        }}
-        .filename-input:focus {{ outline: none; border-color: #00ff00; box-shadow: 0 0 5px rgba(0, 255, 0, 0.5); }}
-        
-        /* Light Theme */
-        body.light-theme {{ 
-            background: #ffffff; 
-            color: #000000; 
-        }}
-        body.light-theme .text-neon {{ 
-            color: #000000; 
-        }}
-        body.light-theme #editor {{ 
-            background: #f8f9fa; 
-            color: #000000; 
-            border-color: #000000;
-        }}
-        body.light-theme #editor:focus {{ 
-            border-color: #000000; 
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3); 
-        }}
-        body.light-theme .filename-input {{ 
-            background: #f8f9fa; 
-            color: #000000; 
-            border-color: #000000;
-        }}
-        body.light-theme .filename-input:focus {{ 
-            border-color: #000000; 
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3); 
-        }}
-        body.light-theme .bg-green-700 {{
-            background-color: #000000 !important;
-        }}
-        body.light-theme .bg-gray-700 {{
-            background-color: #6b7280 !important;
-        }}
-        
-        /* Theme Toggle Button */
+
         .theme-toggle-btn {{
-            background: transparent;
-            border: 1px solid;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur-medium)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--blur-medium)) saturate(180%);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
             cursor: pointer;
             font-size: 1.2rem;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: fixed;
-            top: 1rem;
-            right: 1rem;
+            top: var(--spacing-md);
+            right: var(--spacing-md);
             z-index: 1000;
+            padding: var(--spacing-sm);
+            border-radius: var(--radius-medium);
+            box-shadow: 0 4px 16px var(--shadow-color);
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }}
-        body:not(.light-theme) .theme-toggle-btn {{
-            border-color: #00ff00;
-            color: #00ff00;
+
+        .theme-toggle-btn:hover {{ transform: scale(1.05); opacity: 0.85; }}
+        .theme-toggle-btn:active {{ transform: scale(0.95); }}
+
+        .editor-container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur-strong)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--blur-strong)) saturate(180%);
+            border-radius: var(--radius-large);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px var(--shadow-color), 0 0 0 1px var(--glass-border), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            padding: var(--spacing-lg);
+            margin-top: 60px;
         }}
-        body.light-theme .theme-toggle-btn {{
-            border-color: #000000;
-            color: #000000;
+
+        .editor-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--glass-border);
+        }}
+
+        .editor-header h1 {{ font-size: 1.5rem; font-weight: 600; }}
+
+        .editor-actions {{ display: flex; gap: var(--spacing-sm); }}
+
+        button {{
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-medium);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }}
+
+        button:hover {{ background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); }}
+        button:active {{ transform: translateY(0); }}
+
+        .btn-secondary {{
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }}
+
+        .btn-secondary:hover {{ background: var(--bg-tertiary); box-shadow: 0 4px 12px var(--shadow-color); }}
+
+        .filename-input {{
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-medium);
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-family: inherit;
+            font-size: 14px;
+            width: 100%;
+            transition: all 0.2s;
+        }}
+
+        .filename-input:focus {{
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+        }}
+
+        #editor {{
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-medium);
+            padding: var(--spacing-md);
+            font-family: 'SF Mono', Monaco, Menlo, monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            width: 100%;
+            min-height: 500px;
+            resize: vertical;
+            transition: all 0.2s;
+        }}
+
+        #editor:focus {{
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+        }}
+
+        #status {{
+            margin-top: var(--spacing-md);
+            text-align: center;
+            font-weight: 500;
+        }}
+
+        @media (max-width: 768px) {{
+            .editor-header {{ flex-direction: column; gap: var(--spacing-md); align-items: flex-start; }}
+            .editor-actions {{ width: 100%; flex-direction: column; }}
+            button {{ width: 100%; }}
         }}
     </style>
 </head>
-<body class="bg-black text-neon p-4">
+<body>
     <button id="themeToggle" class="theme-toggle-btn">
         <span id="themeIcon">🌙</span>
     </button>
     
-    <div class="max-w-6xl mx-auto">
-        <div class="mb-4 flex justify-between items-center">
-            <h1 class="text-2xl">{title}</h1>
-            <div class="flex space-x-2">
-                <button onclick="saveFile()" class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded">Save</button>
-                <button onclick="window.close()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded">Close</button>
+    <div class="editor-container">
+        <div class="editor-header">
+            <h1>✏️ {title}</h1>
+            <div class="editor-actions">
+                <button onclick="saveFile()">💾 Save</button>
+                <button onclick="window.close()" class="btn-secondary">Close</button>
             </div>
         </div>
         
         {"" if file_path else '''
-        <div class="mb-4">
-            <label for="filename" class="block text-sm font-bold mb-2">Filename:</label>
-            <input type="text" id="filename" class="filename-input w-full p-2 rounded" placeholder="Enter filename (e.g., myfile.txt)" value="">
+        <div style="margin-bottom: var(--spacing-lg);">
+            <label for="filename" style="display: block; font-weight: 500; margin-bottom: var(--spacing-sm); color: var(--text-secondary); font-size: 14px;">Filename:</label>
+            <input type="text" id="filename" class="filename-input" placeholder="Enter filename (e.g., myfile.txt)" value="">
         </div>
         '''}
         
-        <div class="editor-container">
-            <textarea id="editor" class="w-full h-full p-4 rounded" placeholder="Start typing your content here...">{content}</textarea>
+        <div>
+            <textarea id="editor" placeholder="Start typing your content here...">{content}</textarea>
         </div>
         
-        <div id="status" class="mt-4 text-center"></div>
+        <div id="status"></div>
     </div>
 
     <script>
@@ -478,37 +711,22 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             .then(data => {{
                 const status = document.getElementById('status');
                 if (data.status === 'success') {{
-                    status.innerHTML = '<span class="text-green-500">✓ ' + data.message + '</span>';
-                    setTimeout(() => {{
-                        status.innerHTML = '';
-                    }}, 3000);
+                    status.innerHTML = '<span style="color: #34c759;">✓ ' + data.message + '</span>';
+                    setTimeout(() => {{ status.innerHTML = ''; }}, 3000);
                 }} else {{
-                    status.innerHTML = '<span class="text-red-500">✗ ' + data.message + '</span>';
+                    status.innerHTML = '<span style="color: #ff3b30;">✗ ' + data.message + '</span>';
                 }}
             }})
             .catch(error => {{
                 console.error('Error:', error);
-                document.getElementById('status').innerHTML = '<span class="text-red-500">✗ Save failed due to network error</span>';
+                document.getElementById('status').innerHTML = '<span style="color: #ff3b30;">✗ Save failed</span>';
             }});
         }}
         
-        // Auto-resize textarea
-        const editor = document.getElementById('editor');
-        editor.style.height = 'auto';
-        editor.style.height = Math.max(500, editor.scrollHeight) + 'px';
-        
-        editor.addEventListener('input', function() {{
-            this.style.height = 'auto';
-            this.style.height = Math.max(500, this.scrollHeight) + 'px';
-        }});
-        
-        // Theme Toggle Functionality
         function initTheme() {{
             const themeToggle = document.getElementById('themeToggle');
             const themeIcon = document.getElementById('themeIcon');
             const body = document.body;
-            
-            // Load saved theme or default to dark
             const savedTheme = localStorage.getItem('pyservx-theme') || 'dark';
             
             if (savedTheme === 'light') {{
@@ -519,15 +737,12 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                 themeIcon.textContent = '🌙';
             }}
             
-            // Theme toggle event listener
             themeToggle.addEventListener('click', function() {{
                 if (body.classList.contains('light-theme')) {{
-                    // Switch to dark theme
                     body.classList.remove('light-theme');
                     themeIcon.textContent = '🌙';
                     localStorage.setItem('pyservx-theme', 'dark');
                 }} else {{
-                    // Switch to light theme
                     body.classList.add('light-theme');
                     themeIcon.textContent = '☀️';
                     localStorage.setItem('pyservx-theme', 'light');
@@ -535,7 +750,6 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             }});
         }}
         
-        // Initialize theme on page load
         initTheme();
         
         // Keyboard shortcuts
@@ -550,10 +764,7 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
 </html>
 """
         
-        self.send_response(200)
-        self.send_header("Content-type", "text/html; charset=utf-8")
-        self.end_headers()
-        self.wfile.write(editor_html.encode('utf-8'))
+        self._safe_write_response(200, {"Content-type": "text/html; charset=utf-8"}, editor_html.encode('utf-8'))
 
     def handle_create_file(self):
         """Handle creating a new file"""
@@ -569,11 +780,8 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if not filename:
-            self.send_response(400)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            response_data = {"status": "error", "message": "Filename is required"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._safe_write_response(400, {"Content-type": "application/json"}, 
+                json.dumps({"status": "error", "message": "Filename is required"}).encode('utf-8'))
             return
 
         # Get target directory
@@ -591,19 +799,13 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                 f.write(content)
             
             logging.info(f"Created file: {file_path}")
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            response_data = {"status": "success", "message": f"File '{filename}' created successfully!"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._safe_write_response(200, {"Content-type": "application/json"}, 
+                json.dumps({"status": "success", "message": f"File '{filename}' created successfully!"}).encode('utf-8'))
             
         except OSError as e:
             logging.error(f"Error creating file {file_path}: {e}")
-            self.send_response(500)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            response_data = {"status": "error", "message": f"Error creating file: {e}"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._safe_write_response(500, {"Content-type": "application/json"}, 
+                json.dumps({"status": "error", "message": f"Error creating file: {e}"}).encode('utf-8'))
 
     def handle_save_file(self):
         """Handle saving an existing file"""
@@ -626,19 +828,13 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             
             filename = os.path.basename(file_path)
             logging.info(f"Saved file: {file_path}")
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            response_data = {"status": "success", "message": f"File '{filename}' saved successfully!"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._safe_write_response(200, {"Content-type": "application/json"}, 
+                json.dumps({"status": "success", "message": f"File '{filename}' saved successfully!"}).encode('utf-8'))
             
         except OSError as e:
             logging.error(f"Error saving file {file_path}: {e}")
-            self.send_response(500)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            response_data = {"status": "error", "message": f"Error saving file: {e}"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._safe_write_response(500, {"Content-type": "application/json"}, 
+                json.dumps({"status": "error", "message": f"Error saving file: {e}"}).encode('utf-8'))
 
     def handle_save_clipboard(self):
         """Handle saving clipboard content to server-side storage"""
@@ -666,29 +862,17 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                 f.write(content)
             
             logging.info(f"Successfully saved clipboard for path: {path_key}")
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            response_data = {"status": "success", "message": "Clipboard saved successfully!"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._safe_write_response(200, {"Content-type": "application/json", "Access-Control-Allow-Origin": "*"}, 
+                json.dumps({"status": "success", "message": "Clipboard saved successfully!"}).encode('utf-8'))
             
         except json.JSONDecodeError as e:
             logging.error(f"JSON decode error in save_clipboard: {e}")
-            self.send_response(400)
-            self.send_header("Content-type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            response_data = {"status": "error", "message": "Invalid JSON payload"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._safe_write_response(400, {"Content-type": "application/json", "Access-Control-Allow-Origin": "*"}, 
+                json.dumps({"status": "error", "message": "Invalid JSON payload"}).encode('utf-8'))
         except Exception as e:
             logging.error(f"Error saving clipboard: {e}")
-            self.send_response(500)
-            self.send_header("Content-type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            response_data = {"status": "error", "message": f"Error saving clipboard: {e}"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._safe_write_response(500, {"Content-type": "application/json", "Access-Control-Allow-Origin": "*"}, 
+                json.dumps({"status": "error", "message": f"Error saving clipboard: {e}"}).encode('utf-8'))
 
     def handle_load_clipboard(self):
         """Handle loading clipboard content from server-side storage"""
@@ -716,21 +900,13 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                 content = ""
                 logging.info("No clipboard file found, returning empty content")
             
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            response_data = {"status": "success", "content": content}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._safe_write_response(200, {"Content-type": "application/json", "Access-Control-Allow-Origin": "*"}, 
+                json.dumps({"status": "success", "content": content}).encode('utf-8'))
             
         except Exception as e:
             logging.error(f"Error loading clipboard: {e}")
-            self.send_response(500)
-            self.send_header("Content-type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            response_data = {"status": "error", "message": f"Error loading clipboard: {e}"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._safe_write_response(500, {"Content-type": "application/json", "Access-Control-Allow-Origin": "*"}, 
+                json.dumps({"status": "error", "message": f"Error loading clipboard: {e}"}).encode('utf-8'))
 
     def do_GET(self):
         # Handle load_clipboard before other checks
@@ -741,12 +917,17 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             folder_path = self.translate_path(self.path.replace('/download_folder', ''))
             if os.path.isdir(folder_path):
                 zip_file = file_operations.zip_folder(folder_path)
-                self.send_response(200)
-                self.send_header("Content-Type", "application/zip")
-                self.send_header("Content-Disposition", f"attachment; filename={os.path.basename(folder_path)}.zip")
-                self.end_headers()
-                shutil.copyfileobj(zip_file, self.wfile)
-                self.log_access('download_folder', folder_path)
+                try:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/zip")
+                    self.send_header("Content-Disposition", f"attachment; filename={os.path.basename(folder_path)}.zip")
+                    self.end_headers()
+                    shutil.copyfileobj(zip_file, self.wfile)
+                    self.log_access('download_folder', folder_path)
+                except (ConnectionResetError, BrokenPipeError):
+                    # Client disconnected during folder download - this is normal
+                    logging.debug(f"Client disconnected during folder download of {os.path.basename(folder_path)}")
+                    return
             else:
                 self.send_error(404, "Folder not found")
             return
@@ -796,14 +977,19 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                     self.end_headers()
 
                     start_time = time.time()
-                    for chunk in file_operations.read_file_in_chunks(path):
-                        self.wfile.write(chunk)
-                    end_time = time.time()
-                    duration = end_time - start_time
-                    speed_bps = file_size / duration if duration > 0 else 0
-                    logging.info(f"Downloaded {os.path.basename(path)} ({file_operations.format_size(file_size)}) in {duration:.2f}s at {file_operations.format_size(speed_bps)}/s")
-                    
-                    self.log_access('download', path, file_size, duration)
+                    try:
+                        for chunk in file_operations.read_file_in_chunks(path):
+                            self.wfile.write(chunk)
+                        end_time = time.time()
+                        duration = end_time - start_time
+                        speed_bps = file_size / duration if duration > 0 else 0
+                        logging.info(f"Downloaded {os.path.basename(path)} ({file_operations.format_size(file_size)}) in {duration:.2f}s at {file_operations.format_size(speed_bps)}/s")
+                        
+                        self.log_access('download', path, file_size, duration)
+                    except (ConnectionResetError, BrokenPipeError):
+                        # Client disconnected during file transfer - this is normal
+                        logging.debug(f"Client disconnected during download of {os.path.basename(path)}")
+                        return
 
                 except OSError:
                     self.send_error(404, "File not found")
@@ -938,9 +1124,14 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
     def list_directory(self, path):
         html_content = html_generator.list_directory_page(self, path)
         encoded = html_content.encode('utf-8', 'surrogateescape')
-        self.send_response(200)
-        self.send_header("Content-type", "text/html; charset=utf-8")
-        self.send_header("Content-Length", str(len(encoded)))
-        self.end_headers()
-        self.wfile.write(encoded)
+        try:
+            self.send_response(200)
+            self.send_header("Content-type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(encoded)))
+            self.end_headers()
+            self.wfile.write(encoded)
+        except (ConnectionResetError, BrokenPipeError):
+            # Client disconnected during directory listing - this is normal
+            logging.debug("Client disconnected during directory listing")
+            return
         return

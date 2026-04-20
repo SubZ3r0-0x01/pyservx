@@ -12,7 +12,6 @@ import logging
 import socket
 import json
 import argparse
-import qrcode
 import sqlite3
 from datetime import datetime
 from . import request_handler
@@ -117,7 +116,6 @@ class AnalyticsManager:
         return results
 
 
-
 def load_config():
     """Load configuration from file."""
     default_config = {
@@ -219,7 +217,7 @@ def get_ip_addresses():
     except socket.gaierror:
         return ["127.0.0.1", "Unable to resolve hostname"]
 
-def run(base_dir, no_qr=False, port=None):
+def run(base_dir, port=None):
     """Run the HTTP server with the specified base directory."""
     global PORT
     if port:
@@ -245,35 +243,37 @@ def run(base_dir, no_qr=False, port=None):
     thumbnails_dir = os.path.join(base_dir, ".thumbnails")
     os.makedirs(thumbnails_dir, exist_ok=True)
 
-    if not no_qr:
-        # Print IP addresses before starting the server
-        print("PyServeX - System IPv4 addresses:")
-        for ip in get_ip_addresses():
-            print(f"  http://{ip}:{PORT}")
-            qr = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=3,
-                border=4,
-            )
-            qr.add_data(f"http://{ip}:{PORT}")
-            qr.make(fit=True)
-            try:
-                qr.print_tty()
-            except OSError:
-                print("Not a TTY. Cannot print QR code.")
+    # Print access information
+    print("\n" + "="*60)
+    print("🚀 PyServeX v3.0.2 - Server Access Information")
+    print("="*60)
+    
+    print(f"\n🌐 Access URLs:")
+    ip_list = get_ip_addresses()
+    for ip in ip_list:
+        if ip == "127.0.0.1":
+            print(f"   http://{ip}:{PORT} (this device only)")
+        elif ip.startswith("192.168.") or ip.startswith("10.") or ip.startswith("172."):
+            print(f"   http://{ip}:{PORT} ⭐ (share this with others)")
+        else:
+            print(f"   http://{ip}:{PORT}")
+    
+    print("\n" + "="*60)
+    print("💡 Tips:")
+    print("   • Share the local network URL with others on your WiFi")
+    print("   • Press Ctrl+C to stop the server")
+    print("="*60 + "\n")
 
     server = None
     
     try:
         server = socketserver.ThreadingTCPServer(("0.0.0.0", PORT), Handler)
-        print(f"PyServeX v3.0.0 serving at http://0.0.0.0:{PORT}")
-        print("Features: Fixed Layout, Real-time Search, Direct Media Downloads, Text Clipboard, Dark/Light Theme")
+        print(f"PyServeX v3.0.2 serving at http://0.0.0.0:{PORT}")
+        print("Features: Apple iOS Glass Theme, Animated Background, Real-time Search, Text Clipboard, Dark/Light Mode")
         
         def shutdown_handler(signum, frame):
             print("\nShutting down PyServeX...")
             if server:
-                # Run shutdown in a separate thread to avoid blocking
                 threading.Thread(target=server.shutdown, daemon=True).start()
                 server.server_close()
             sys.exit(0)
@@ -285,7 +285,6 @@ def run(base_dir, no_qr=False, port=None):
         server.serve_forever()
     
     except KeyboardInterrupt:
-        # Handle Ctrl+C explicitly to ensure clean shutdown
         if server:
             print("\nShutting down PyServeX...")
             server.shutdown()
@@ -299,15 +298,14 @@ def run(base_dir, no_qr=False, port=None):
 
 def main():
     """Main entry point for the command-line tool."""
-    parser = argparse.ArgumentParser(description="PyServeX: Advanced HTTP server for file sharing with dark/light themes, notepad, analytics, and enhanced features.")
-    parser.add_argument('--version', action='version', version='PyServeX 3.0.0')
+    parser = argparse.ArgumentParser(description="PyServeX: Advanced HTTP server for file sharing with Apple iOS glass theme, animated background, dark/light themes, and enhanced features.")
+    parser.add_argument('--version', action='version', version='PyServeX 3.0.2')
     parser.add_argument('--port', type=int, default=8088, help='Port to run the server on (default: 8088)')
-    parser.add_argument('--no-qr', action='store_true', help='Disable QR code generation')
     args = parser.parse_args()
 
     # Get the shared folder
     base_dir = get_shared_folder()
-    run(base_dir, no_qr=args.no_qr, port=args.port)
+    run(base_dir, port=args.port)
 
 if __name__ == "__main__":
     main()

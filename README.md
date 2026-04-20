@@ -1,16 +1,17 @@
 # PyServeX v3.0 – Advanced Python HTTP File Server
 
-A feature-rich HTTP server for file sharing with a modern fixed-layout UI, real-time search, direct media downloads, permanent text clipboard, dark/light themes, and QR code access.
+A feature-rich HTTP server for file sharing with a modern Apple iOS glass theme UI, animated background, real-time search, direct media downloads, permanent text clipboard, and dark/light themes.
 
 **by Parth Padhiyar (SubZ3r0-0x01)**
 
 ## 🚀 What's New in v3.0
 
-### Major UI Overhaul
-- **Fixed Layout Design** - No more scrolling! Single-page interface with dedicated panels
-- **Split-Panel Layout** - File explorer (60%) and text clipboard (40%) side-by-side
-- **Scrollable Sections** - File list and text areas scroll independently
-- **Mobile Responsive** - Stacked layout on smaller screens
+### Apple iOS Glass Theme
+- **Glassmorphism Design** - Beautiful translucent panels with backdrop blur
+- **Animated Background** - Subtle network visualization with nodes and particles
+- **Translucent UI** - All panels show animated background through glass effects
+- **Resizable Panels** - Drag divider between file explorer and clipboard
+- **Theme Toggle** - Persistent dark/light mode with smooth transitions
 
 ### Enhanced Features
 - **Real-time Search** - Instant file filtering as you type (no page refresh needed)
@@ -42,15 +43,15 @@ Run the server:
 pyservx
 ```
 
-Or with custom options:
+Or with custom port:
 
 ```bash
-pyservx --port 8080 --no-qr
+pyservx --port 8080
 ```
 
 - The server automatically creates a shared folder in your Downloads directory (`PyServeX-Shared`)
 - Access the web interface at `http://localhost:8088` (or your custom port)
-- Scan the QR code in the terminal to access from mobile devices
+- Share the local network URL (e.g., `http://192.168.1.16:8088`) with others on your WiFi
 - Use `Ctrl+C` to stop the server
 
 ## ✨ Features
@@ -96,7 +97,6 @@ pyservx --port 8080 --no-qr
 - **Secure File Operations** with proper validation
 
 ### ⚡ Performance Features
-- **QR Code Access** for easy mobile device connection
 - **Real-time Progress Tracking** for uploads and downloads
 - **No File Size Restrictions** - upload files of any size
 - **Chunked File Transfer** for efficient large file handling
@@ -113,7 +113,6 @@ pyservx --port 8080 --no-qr
 ## Requirements
 
 - Python 3.6+
-- `qrcode` library (automatically installed with pip)
 - `Pillow` library for image processing (automatically installed with pip)
 
 ## License

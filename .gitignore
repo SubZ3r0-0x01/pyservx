@@ -28,6 +28,7 @@ server_output.log
 # IDE files
 .vscode/
 .idea/
+.kiro/
 
 # OS files
 .DS_Store

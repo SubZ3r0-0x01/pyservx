@@ -1,16 +1,15 @@
 [project]
 name = "pyservx"
-version = "3.0.1"
-description = "A feature-rich Python HTTP server for file sharing with fixed layout UI, real-time search, direct media downloads, permanent text clipboard, dark/light themes, and QR code access."
+version = "3.0.2"
+description = "A feature-rich Python HTTP server for file sharing with Apple iOS glass theme UI, real-time search, direct media downloads, permanent text clipboard, and dark/light themes."
 readme = "README.md"
 requires-python = ">=3.6"
 license = {text = "MIT"}
-keywords = ["file server", "http server", "file sharing", "fixed layout", "real-time search", "media downloads", "text clipboard", "qrcode", "pyservx", "dark mode", "light mode", "notepad", "text editor", "file preview", "analytics", "thumbnails"]
+keywords = ["file server", "http server", "file sharing", "glass theme", "glassmorphism", "real-time search", "media downloads", "text clipboard", "pyservx", "dark mode", "light mode", "notepad", "text editor", "file preview", "analytics", "thumbnails", "apple ios", "animated background"]
 authors = [
     { name = "Subz3r0x01", email = "subz3r0x01@protonmail.com" }
 ]
 dependencies = [
-    "qrcode",
     "Pillow"
 ]
 classifiers = [
