@@ -106,7 +106,14 @@ def list_directory_page(handler, path):
                 # Regular file click behavior
                 action_onclick = f"previewFile('{href}', '{html.escape(displayname)}')"
                 file_icon = "📄"
-            
+            is_editable = displayname.lower().endswith(('.txt', '.py', '.js', '.html', '.css', '.json', '.xml', '.md', '.log', '.cfg', '.ini', '.yml', '.yaml'))
+            edit_button = ""
+            if is_editable:
+                edit_button = (
+                    f"<button onclick=\"event.stopPropagation(); editFile('{href}', '{html.escape(displayname)}')\" "
+                    "class=\"bg-blue-700 hover:bg-blue-800 text-white font-bold py-1 px-2 rounded text-xs mr-1\">✏️</button>"
+                )
+
             list_rows.append(f"""
                 <tr class="hover:bg-green-900/20 cursor-pointer" onclick="{action_onclick}">
                     <td class="py-2 px-4 border-b border-green-700/50">
@@ -116,7 +123,7 @@ def list_directory_page(handler, path):
                     <td class="py-2 px-4 border-b border-green-700/50 text-right">{date_modified}</td>
                     <td class="py-2 px-4 border-b border-green-700/50 text-right">
                         <button onclick="event.stopPropagation(); previewFile('{href}', '{html.escape(displayname)}')" class="bg-green-700 hover:bg-green-800 text-white font-bold py-1 px-2 rounded text-xs mr-1">👁️</button>
-                        {f'<button onclick="event.stopPropagation(); editFile(\'{href}\', \'{html.escape(displayname)}\')" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-1 px-2 rounded text-xs mr-1">✏️</button>' if displayname.lower().endswith(('.txt', '.py', '.js', '.html', '.css', '.json', '.xml', '.md', '.log', '.cfg', '.ini', '.yml', '.yaml')) else ''}
+                        {edit_button}
                         <button onclick="event.stopPropagation(); downloadFile('{href}', '{html.escape(displayname)}')" class="bg-orange-700 hover:bg-orange-800 text-white font-bold py-1 px-2 rounded text-xs">⬇️</button>
                     </td>
                 </tr>
@@ -349,26 +356,18 @@ def list_directory_page(handler, path):
         }}
 
         th {{
-            background-color: rgba(0, 255, 0, 0.1);
+            background-color: #002200;
             color: #00ff00;
             font-weight: normal;
-            cursor: pointer;
             position: sticky;
             top: 0;
             z-index: 10;
+            pointer-events: none;
         }}
 
         body.light-theme th {{
-            background-color: rgba(0, 0, 0, 0.1);
+            background-color: #e5e7eb;
             color: #000000;
-        }}
-
-        th:hover {{
-            background-color: rgba(0, 255, 0, 0.2);
-        }}
-
-        body.light-theme th:hover {{
-            background-color: rgba(0, 0, 0, 0.2);
         }}
 
         tr:nth-child(even) {{
@@ -559,15 +558,9 @@ def list_directory_page(handler, path):
                     <table>
                         <thead>
                             <tr>
-                                <th onclick="sortFiles('name')" class="cursor-pointer">
-                                    📄 Name {('↓' if sort_by == 'name' and sort_order == 'desc' else '↑' if sort_by == 'name' else '')}
-                                </th>
-                                <th onclick="sortFiles('size')" class="cursor-pointer text-right">
-                                    📏 Size {('↓' if sort_by == 'size' and sort_order == 'desc' else '↑' if sort_by == 'size' else '')}
-                                </th>
-                                <th onclick="sortFiles('date')" class="cursor-pointer text-right">
-                                    📅 Modified {('↓' if sort_by == 'date' and sort_order == 'desc' else '↑' if sort_by == 'date' else '')}
-                                </th>
+                                <th>📄 Name ↑</th>
+                                <th class="text-right">📏 Size</th>
+                                <th class="text-right">📅 Modified</th>
                                 <th class="text-right">⚡ Actions</th>
                             </tr>
                         </thead>

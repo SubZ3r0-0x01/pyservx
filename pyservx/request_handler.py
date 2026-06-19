@@ -14,6 +14,29 @@ from . import html_generator
 from . import file_operations
 
 class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def _send_json(self, status_code, payload):
+        self.send_response(status_code)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(payload).encode("utf-8"))
+
+    def _get_allowed_extensions(self):
+        extensions = self.config.get("allowed_extensions", [])
+        return {ext.lower() if ext.startswith(".") else f".{ext.lower()}" for ext in extensions}
+
+    def _is_extension_allowed(self, filename):
+        allowed_extensions = self._get_allowed_extensions()
+        if not allowed_extensions:
+            return True
+        _, extension = os.path.splitext(filename)
+        return extension.lower() in allowed_extensions
+
+    def _is_size_allowed(self, byte_size):
+        max_size = self.config.get("max_file_size")
+        if not max_size or max_size <= 0:
+            return True
+        return byte_size <= max_size
+
     def translate_path(self, path):
         # Prevent path traversal attacks
         path = posixpath.normpath(urllib.parse.unquote(path))
@@ -584,6 +607,14 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         # Sanitize filename
         filename = os.path.basename(filename)
+        if not self._is_extension_allowed(filename):
+            self._send_json(400, {"status": "error", "message": "File type not allowed"})
+            return
+
+        content_size = len(content.encode("utf-8"))
+        if not self._is_size_allowed(content_size):
+            self._send_json(413, {"status": "error", "message": "File exceeds maximum allowed size"})
+            return
         file_path = os.path.join(target_dir, filename)
 
         try:
@@ -591,19 +622,11 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                 f.write(content)
             
             logging.info(f"Created file: {file_path}")
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            response_data = {"status": "success", "message": f"File '{filename}' created successfully!"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._send_json(200, {"status": "success", "message": f"File '{filename}' created successfully!"})
             
         except OSError as e:
             logging.error(f"Error creating file {file_path}: {e}")
-            self.send_response(500)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            response_data = {"status": "error", "message": f"Error creating file: {e}"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._send_json(500, {"status": "error", "message": f"Error creating file: {e}"})
 
     def handle_save_file(self):
         """Handle saving an existing file"""
@@ -619,6 +642,14 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         # Get file path
         file_path = self.translate_path(self.path.replace('/save_file', ''))
+        if not self._is_extension_allowed(file_path):
+            self._send_json(400, {"status": "error", "message": "File type not allowed"})
+            return
+
+        content_size = len(content.encode("utf-8"))
+        if not self._is_size_allowed(content_size):
+            self._send_json(413, {"status": "error", "message": "File exceeds maximum allowed size"})
+            return
         
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
@@ -626,19 +657,11 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
             
             filename = os.path.basename(file_path)
             logging.info(f"Saved file: {file_path}")
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            response_data = {"status": "success", "message": f"File '{filename}' saved successfully!"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._send_json(200, {"status": "success", "message": f"File '{filename}' saved successfully!"})
             
         except OSError as e:
             logging.error(f"Error saving file {file_path}: {e}")
-            self.send_response(500)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            response_data = {"status": "error", "message": f"Error saving file: {e}"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            self._send_json(500, {"status": "error", "message": f"Error saving file: {e}"})
 
     def handle_save_clipboard(self):
         """Handle saving clipboard content to server-side storage"""
@@ -860,13 +883,21 @@ class FileRequestHandler(http.server.SimpleHTTPRequestHandler):
                         self.send_error(404, "Target directory not found")
                         return
 
+                    if not self._is_extension_allowed(filename):
+                        self._send_json(400, {"status": "error", "message": f"File type not allowed: {filename}"})
+                        return
+
+                    file_size_bytes = len(file_content)
+                    if not self._is_size_allowed(file_size_bytes):
+                        self._send_json(413, {"status": "error", "message": f"File too large: {filename}"})
+                        return
+
                     file_path = os.path.join(target_dir, filename)
                     try:
                         start_time = time.time()
                         file_operations.write_file_in_chunks(file_path, file_content)
                         end_time = time.time()
                         duration = end_time - start_time
-                        file_size_bytes = len(file_content)
                         speed_bps = file_size_bytes / duration if duration > 0 else 0
                         
                         logging.info(f"Uploaded {filename} ({file_operations.format_size(file_size_bytes)}) in {duration:.2f}s at {file_operations.format_size(speed_bps)}/s")
