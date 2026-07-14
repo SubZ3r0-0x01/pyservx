@@ -4,6 +4,12 @@ A feature-rich HTTP server for file sharing with a modern fixed-layout UI, real-
 
 **by Parth Padhiyar (SubZ3r0-0x01)**
 
+
+## Version 1.0.1 (2026-07-14)
+
+### Added
+- {
+
 ## 🚀 What's New in v3.0
 
 ### Major UI Overhaul
