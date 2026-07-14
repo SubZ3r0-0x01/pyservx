@@ -6,6 +6,12 @@ A feature-rich HTTP server for file sharing with a modern fixed-layout UI, real-
 
 
 
+
+## Version 1.0.3 (2026-07-14)
+
+### Added
+- Password-Protected Access Control
+
 ## Version 1.0.2 (2026-07-14)
 
 ### Added
