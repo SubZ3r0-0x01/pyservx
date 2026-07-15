@@ -1,4 +1,4 @@
-# PyServeX v1.0.6
+# PyServeX v1.0.7
 
 Advanced Python HTTP File Server with Cloud Security VAPT Integration
 
@@ -15,10 +15,15 @@ Advanced Python HTTP File Server with Cloud Security VAPT Integration
 - Encrypted file transfers
 
 ## Latest Updates
-- v1.0.6: Cloud security scanner integration
+- v1.0.7: Cloud security scanner integration
 - v1.0.5: VAPT integration for real-time scanning
 - v1.0.4: Security hardening and encryption module
 - v1.0.3: Password-protected access control
 
 ---
 Auto-updated by development automation
+
+## Version 1.0.7 (2026-07-15)
+
+### Added
+- Cloud security scanner with real-time monitoring
