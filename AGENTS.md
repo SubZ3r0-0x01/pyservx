@@ -1,6 +1,6 @@
-# AGENTS.md — PyServeX
+﻿# AGENTS.md ÔÇö PyServeX
 
-Instructions for AI coding agents (Claude, Cursor, Copilot, …) working in this
+Instructions for AI coding agents (Claude, Cursor, Copilot, ÔÇª) working in this
 repository. Read this before generating patches; it prevents most wrong-code
 mistakes seen in this project.
 
@@ -21,44 +21,44 @@ PyServeX is a **pure-stdlib Python HTTP(S) file server** with optional extras
 
 ```
 pyservx/
-├── server.py            # entry point, CLI, wires all managers into the handler
-├── request_handler.py   # http.server handler: routing, auth gate, uploads,
-│                        # downloads (Range+throttle), previews, security headers
-├── html_generator.py    # ALL HTML/JS/CSS pages are Python f-string templates here:
-│                        # directory listing, login, tokens, p2p, editor
-├── auth.py              # AuthManager: local-network bypass, sessions (cookie),
-│                        # API tokens (SQLite ~/.pyservx_tokens.db), PBKDF2 users
-├── chunked_upload.py    # ChunkedUploadManager: init/chunk/status/complete/abort,
-│                        # staging dir ~/.pyservx_uploads/<upload_id>/chunk_N
-├── ephemeral.py         # EphemeralLinkManager: /e/<token> self-destructing links
-├── throttling.py        # parse_speed("2M"), global RateLimiter token bucket,
-│                        # ThrottledReader iterator
-├── mcp_server.py        # MCP tools: list_files/read_file/write_file/upload_file/
-│                        # search_files/server_info over JSON-RPC 2.0
-├── webrtc_signaling.py  # SignalingHub room relay: SDP/ICE polling with room/
-│                        # peer caps, per-peer rate limits, payload bound,
-│                        # and ICE relay-candidate rewrite to the sender's
-│                        # server-observed address
-├── ssh_server.py        # paramiko SFTP server jailing users to base_dir;
-│                        # passwords from auth store, keys from ~/.pyservx_authorized_keys
-├── dashboard.py         # StatsHub counters + rich TUI (--dashboard)
-├── file_operations.py   # zip_folder, chunked read/write, hashing helpers
-├── tunnel.py            # TunnelManager: tailscale funnel → cloudflared → ngrok
-│                        # with an in-thread watchdog that drops the URL and
-│                        # retries the provider chain if the process dies
-├── remote_sftp.py       # RemoteSftpManager: outbound paramiko bridge for the
-│                        # web UI (browse/download/upload); sessions are
-│                        # in-memory + idle-reaped (SESSION_IDLE_TTL)
-├── access_logger.py     # AccessLogger: JSONL access trail with size-based
-│                        # rotation (10 MiB), default ~/.pyservx_logs/
-├── events.py            # EventBus publish/subscribe + SSE formatting; live
-│                        # events stream at GET /api/events (heartbeat 15 s)
-├── search_index.py      # bg full-share index; GET /api/search?q= instant hits
-├── trash.py             # TrashManager + version history; /api/trash/* and
-│                        # /api/versions/* (data dirs ~/.pyservx_trash,
-│                        # ~/.pyservx_versions)
-├── security_scanner.py  # magic-byte (bundled) + optional python-magic scanner
-└── integrity_checker.py # SHA-256 baseline integrity checks
+Ôö£ÔöÇÔöÇ server.py            # entry point, CLI, wires all managers into the handler
+Ôö£ÔöÇÔöÇ request_handler.py   # http.server handler: routing, auth gate, uploads,
+Ôöé                        # downloads (Range+throttle), previews, security headers
+Ôö£ÔöÇÔöÇ html_generator.py    # ALL HTML/JS/CSS pages are Python f-string templates here:
+Ôöé                        # directory listing, login, tokens, p2p, editor
+Ôö£ÔöÇÔöÇ auth.py              # AuthManager: local-network bypass, sessions (cookie),
+Ôöé                        # API tokens (SQLite ~/.pyservx_tokens.db), PBKDF2 users
+Ôö£ÔöÇÔöÇ chunked_upload.py    # ChunkedUploadManager: init/chunk/status/complete/abort,
+Ôöé                        # staging dir ~/.pyservx_uploads/<upload_id>/chunk_N
+Ôö£ÔöÇÔöÇ ephemeral.py         # EphemeralLinkManager: /e/<token> self-destructing links
+Ôö£ÔöÇÔöÇ throttling.py        # parse_speed("2M"), global RateLimiter token bucket,
+Ôöé                        # ThrottledReader iterator
+Ôö£ÔöÇÔöÇ mcp_server.py        # MCP tools: list_files/read_file/write_file/upload_file/
+Ôöé                        # search_files/server_info over JSON-RPC 2.0
+Ôö£ÔöÇÔöÇ webrtc_signaling.py  # SignalingHub room relay: SDP/ICE polling with room/
+Ôöé                        # peer caps, per-peer rate limits, payload bound,
+Ôöé                        # and ICE relay-candidate rewrite to the sender's
+Ôöé                        # server-observed address
+Ôö£ÔöÇÔöÇ ssh_server.py        # paramiko SFTP server jailing users to base_dir;
+Ôöé                        # passwords from auth store, keys from ~/.pyservx_authorized_keys
+Ôö£ÔöÇÔöÇ dashboard.py         # StatsHub counters + rich TUI (--dashboard)
+Ôö£ÔöÇÔöÇ file_operations.py   # zip_folder, chunked read/write, hashing helpers
+Ôö£ÔöÇÔöÇ tunnel.py            # TunnelManager: tailscale funnel ÔåÆ cloudflared ÔåÆ ngrok
+Ôöé                        # with an in-thread watchdog that drops the URL and
+Ôöé                        # retries the provider chain if the process dies
+Ôö£ÔöÇÔöÇ remote_sftp.py       # RemoteSftpManager: outbound paramiko bridge for the
+Ôöé                        # web UI (browse/download/upload); sessions are
+Ôöé                        # in-memory + idle-reaped (SESSION_IDLE_TTL)
+Ôö£ÔöÇÔöÇ access_logger.py     # AccessLogger: JSONL access trail with size-based
+Ôöé                        # rotation (10 MiB), default ~/.pyservx_logs/
+Ôö£ÔöÇÔöÇ events.py            # EventBus publish/subscribe + SSE formatting; live
+Ôöé                        # events stream at GET /api/events (heartbeat 15 s)
+Ôö£ÔöÇÔöÇ search_index.py      # bg full-share index; GET /api/search?q= instant hits
+Ôö£ÔöÇÔöÇ trash.py             # TrashManager + version history; /api/trash/* and
+Ôöé                        # /api/versions/* (data dirs ~/.pyservx_trash,
+Ôöé                        # ~/.pyservx_versions)
+Ôö£ÔöÇÔöÇ security_scanner.py  # magic-byte (bundled) + optional python-magic scanner
+ÔööÔöÇÔöÇ integrity_checker.py # SHA-256 baseline integrity checks
 ```
 
 ## Critical rules (do not break)
@@ -66,13 +66,13 @@ pyservx/
 1. **Auth invariant**: clients on the local network (RFC1918/loopback/link-local)
    must *never* be asked to log in. Remote clients need a session cookie or
    `Authorization: Bearer <token>`. The single gate is
-   `FileRequestHandler._gate()` → `AuthManager.authenticate_request()`.
+   `FileRequestHandler._gate()` ÔåÆ `AuthManager.authenticate_request()`.
    Any new route must pass through `_gate()` or be added to
    `UNAUTHENTICATED_PATHS` deliberately.
 2. **Path traversal**: every user-supplied path goes through
    `translate_path()` (HTTP) or `McpBridge.resolve()` (MCP) or
    `_PyServeXSftp._map()` (SFTP). Never join raw user input with `base_dir`.
-3. **Risky files never execute**: `.html/.svg/.pdf/…` are served inside a
+3. **Risky files never execute**: `.html/.svg/.pdf/ÔÇª` are served inside a
    sandboxed `<iframe>` from `/raw/...` which sets
    `Content-Security-Policy: default-src 'none'; sandbox`. Executable/scripty
    extensions get `Content-Type: application/octet-stream` +
@@ -85,15 +85,15 @@ pyservx/
    lock-protected.
 6. **Frontend has no build step**: pages live as templates in
    `html_generator.py`. The LAN is served over plain HTTP, so `crypto.subtle`
-   is unavailable — file identity hashes use the FNV-1a fallback in JS
+   is unavailable ÔÇö file identity hashes use the FNV-1a fallback in JS
    (`fileIdOf`). Keep both branches working.
 7. **Chunk protocol**: client picks `upload_id = sha256/fnv(name:size:mtime)`,
    POSTs `/api/upload/init`, then chunks of exactly the negotiated
    `chunk_size` to `/api/upload/chunk?upload_id&index`, finally
    `/api/upload/complete`. Resume = re-run init; missing indexes come back in
-   the status payload. Do not change these field names casually — the browser
+   the status payload. Do not change these field names casually ÔÇö the browser
    code in `_DIRECTORY_TEMPLATE` mirrors them.
-8. **CSRF**: state-changing methods (POST/DELETE/…) reject requests whose
+8. **CSRF**: state-changing methods (POST/DELETE/ÔÇª) reject requests whose
    `Origin` header host does not match the `Host` header. Non-browser clients
    (`curl`, scripts) omit `Origin` and are unaffected. Do not widen this.
 9. **Login brute force**: failed logins are counted per-IP; after
@@ -108,7 +108,7 @@ pyservx/
     moves off the Origin check.
 12. **Live events are close-delimited**: `GET /api/events` streams SSE frames
     with no `Content-Length`. `http.client.read(amt)` blocks until `amt` bytes
-    OR EOF arrive — tests/clients must read small chunks (`read(1)`/`readline`),
+    OR EOF arrive ÔÇö tests/clients must read small chunks (`read(1)`/`readline`),
     not a big buffer. Browser `EventSource` handles this natively.
 13. **Trash restore / version restore must jail paths**: `/api/trash/*` and
     `/api/versions/*` resolve relative paths through `_rel_path_inside()`
@@ -120,7 +120,7 @@ pyservx/
 
 ## Conventions
 
-- Python ≥3.8, stdlib-first; optional deps only behind try/import with a
+- Python ÔëÑ3.8, stdlib-first; optional deps only behind try/import with a
   graceful message (`ssh_server.py`, `dashboard.py`).
 - No comments unless explaining non-obvious security/threading decisions.
 - Version lives in two places: `pyproject.toml` and `pyservx/__init__.py`.
@@ -128,7 +128,7 @@ pyservx/
   `~/.pyservx_config.json`.
 - Maintainers-style lifecycle: every manager that owns threads/resources gets
   a `shutdown()` (and stale-state loop) called from `server._shutdown()` on
-  SIGINT/KeyboardInterrupt — keep the teardown list in that helper in sync.
+  SIGINT/KeyboardInterrupt ÔÇö keep the teardown list in that helper in sync.
 
 ## Testing & verification
 
